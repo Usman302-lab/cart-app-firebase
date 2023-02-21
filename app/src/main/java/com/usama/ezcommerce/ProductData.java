@@ -1,10 +1,24 @@
 package com.usama.ezcommerce;
 
+import android.content.Context;
+import android.util.Log;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+
 public class ProductData {
     private int imgId;
+    private String price;
     private String productname;
     private float stars;
-    private String price;
+
+    public  ProductData(){
+        imgId = 0;
+        productname = "";
+        stars = 0;
+
+    }
+
 
     public ProductData(int imgId, String productname, float stars, String price){
         this.imgId = imgId;
@@ -12,6 +26,15 @@ public class ProductData {
         this.stars = stars;
         this.price = price;
     }
+
+
+    //// Receive products from UI Layer & store them in Database //////
+    public void saveToDB(ArrayList<ProductData> data){
+        /// store it in database ////
+        ProductDB temp = new ProductDB();
+        temp.saveProducts(data);
+    }
+
 
     public int getImgId() {
         return imgId;

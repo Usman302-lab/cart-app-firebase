@@ -1,15 +1,25 @@
 package com.usama.ezcommerce;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
 
 
 public class Page3 extends AppCompatActivity {
@@ -41,25 +51,51 @@ public class Page3 extends AppCompatActivity {
         });
 
 
+        //// read all items from cart ////
+        ArrayList<CartData> cart = new ArrayList<CartData>();
+
+        FirebaseDatabase database = FirebaseDatabase.getInstance();			/// points to our database ///
+        DatabaseReference myRef = database.getReference("/Cart");              /// points to particular table in database ///
+
+        /// Event to fire when changes occur in Cart table (Like a thread). It will read all data ///
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                cart.clear();                                                  /// remove previous cart items ///
+                CartData item ;
+                for(DataSnapshot child : snapshot.getChildren()){
+                    item = child.getValue(CartData.class);
+                    cart.add(item);
+                }
+                if(cart.size() != 0) {
+                    populateItems(cart);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
         Intent intent = getIntent();
         String item = intent.getStringExtra("UniqueItem1");
         String price = intent.getStringExtra("UniquePrice1");
         int imgID = intent.getIntExtra("UniqueImage1", 0);
 
+        CartData ITEM = new CartData(imgID, item, price, 1);
 
-        //// a check in cart (if item already in cart, then only increase in its quantity) ////
-        boolean exists = findItemInCart(item);
-        if(!exists) {
-            MainActivity.cart.add(new CartData(imgID, item, price, 1));
-        }
-        else{
-            int Itemindex = findItemIndex(item);
-            if (Itemindex != -1)
-                MainActivity.cart.get(Itemindex).incrementQuantity();
-
-        }
+        CartData cartitem = new CartData();
+        cartitem.saveCartItemToDB(ITEM);
 
 
+
+        cartitem.GetPrice();
+    }
+
+
+
+    public void populateItems(ArrayList<CartData> cart){
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerView2);
         recyclerView.setHasFixedSize(true);
 
@@ -68,30 +104,10 @@ public class Page3 extends AppCompatActivity {
         recyclerView.setLayoutManager(layoutManager);
 
 
-        CartAdapter adapter = new CartAdapter(Page3.this, MainActivity.cart);
+        CartAdapter adapter = new CartAdapter(Page3.this, cart);
         recyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
         recyclerView.setAdapter(adapter);
 
-        textView.setText(String.valueOf(adapter.getTotal()));              //// set total price ////
     }
 
-    public boolean findItemInCart(String item){
-        for(CartData cart : MainActivity.cart) {
-            if (cart.getProductname().equals(item))
-                return true;
-        }
-        return false;
-    }
-
-    public int findItemIndex(String item){
-        int i = 0;
-        boolean flag = false;
-        for(CartData cart : MainActivity.cart) {
-            if (cart.getProductname().equals(item))
-                return i;
-            else
-                i++;
-        }
-        return -1;
-    }
 }
